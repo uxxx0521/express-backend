@@ -2,25 +2,22 @@ const express = require("express");
 const path = require("path");
 const app = express();
 
+app.use(express.json());
+app.use(logger); //LOGGER used
 app.use(
   express.static(path.join(__dirname, "../../Portfolio/react-app-js/dist"))
 );
 
-app.use(logger); //LOGGER used
+app.use("/users", require("./routes/api/users")); //API Routes
+app.use("/register", require("./routes/api/register"));
+app.use("/auth", require("./routes/api/auth"));
 
+//handle react pages
 app.get("*", (req, res) => {
   res.sendFile(
     path.join(__dirname, "../../Portfolio/react-app-js/dist", "index.html")
   );
 });
-
-//IMPORT routes---------------------------
-const userRouter = require("./routes/users");
-const postRouter = require("./routes/posts");
-//everthing starts with "users" add the thing after  ,
-app.use("/users", userRouter); //Link the router
-app.use("/posts", postRouter);
-//----------------------------------------
 
 //LOGGER
 function logger(req, res, next) {
