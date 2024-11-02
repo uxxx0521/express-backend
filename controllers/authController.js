@@ -1,5 +1,5 @@
 const usersDB = {
-  users: require("../model/user.json"),
+  users: require("../model/users.json"),
   setUsers: function (data) {
     this.users = data;
   },
@@ -29,12 +29,12 @@ const handleLogin = async (req, res) => {
   if (match) {
     //create JWTs here
     const accessToken = jwt.sign(
-      { "username: ": foundUser.username },
+      { username: foundUser.username },
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "30s" }
     );
     const refreshToken = jwt.sign(
-      { "username: ": foundUser.username },
+      { username: foundUser.username },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "1d" }
     );
