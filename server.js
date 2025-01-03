@@ -1,4 +1,5 @@
 const express = require("express");
+const mysql = require("mysql2")
 const path = require("path");
 const app = express();
 const verifyJWT = require("./middleware/verifyJWT");
@@ -11,11 +12,27 @@ app.use(
 );
 //middle ware for cookies
 app.use(cookieParser());
-app.use("/users", require("./routes/api/users")); //API Routes
-app.use("/register", require("./routes/api/register"));
-app.use("/auth", require("./routes/api/auth"));
-app.use("/refresh", require("./routes/api/refresh"));
-app.use("/logout", require("./routes/api/logout"));
+app.use("/users", require("./routes/api/users"));        //API Routes
+app.use("/register", require("./routes/api/register"));  //sign up
+app.use("/auth", require("./routes/api/auth"));          //log in
+app.use("/refresh", require("./routes/api/refresh"));    //refresh token
+app.use("/logout", require("./routes/api/logout"));      //log out
+app.use("/fetch"), require("./routes/api/fetch");        //fetch user data when mount.
+
+//DB
+const db = mysql.createConnection({
+  host: "localhost",         // Your MySQL host
+  user: "root",  // Your MySQL username
+  password: "Ux05210521", // Your MySQL password
+  database: "portfoliodb", // Your MySQL database name
+});
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+  } else {
+    console.log("Connected to MySQL database");
+  }
+});
 
 //handle react pages
 app.get("*", (req, res) => {
