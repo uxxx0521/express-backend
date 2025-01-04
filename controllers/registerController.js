@@ -24,7 +24,7 @@ const handleNewUser = async (req, res) => {
         return res.status(409).json({ message: "Username already exists." });
       }
 
-      // Hash the password
+      // Hash the password.
       const pwd = await bcrypt.hash(password, 10);
 
       // Insert new user into the database
