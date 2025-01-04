@@ -1,4 +1,4 @@
-const mysql = require("mysql2"); //Database
+const db = require("../server"); //Database
 
 const handleFetch = (req, res) => {
   const generalDataQuery = `
@@ -58,5 +58,5 @@ const handleFetch = (req, res) => {
 
 
 module.exports = {
-  handleFetch
+  handleFetch,
 };

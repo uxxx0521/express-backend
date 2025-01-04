@@ -1,37 +1,48 @@
-const usersDB = {
-  users: require("../model/user.json"),
-  setUsers: function (data) {
-    this.users = data;
-  },
-};
-
-const fsPromises = require("fs").promises;
-const path = require("path");
+const db = require("../db"); //Database
 const bcrypt = require("bcrypt");
 
+
 const handleNewUser = async (req, res) => {
-  const { user, pwd } = req.body;
-  if (!user || !pwd) {
+  const { nickname, email, username, password } = req.body;
+  console.log("Request Body:", req.body);
+  if (!username || !password || !nickname || !email) {
     return res
       .status(400)
-      .json({ message: "Username and password are required." });
+      .json({ message: "All fields are required." });
   }
-  const duplicate = usersDB.users.find((person) => person.username === user);
-  if (duplicate) {
-    return res.sendStatus(409);
-  }
+
   try {
-    const hashedPwd = await bcrypt.hash(pwd, 10); //Encrypt
-    const newUser = { username: user, password: hashedPwd };
-    usersDB.setUsers([...usersDB.users, newUser]);
-    await fsPromises.writeFile(
-      path.join(__dirname, "..", "model", "user.json"),
-      JSON.stringify(usersDB.users)
-    );
-    console.log(usersDB.users);
-    res.status(201).json({ success: `New user ${user} created!` });
+    // Check if the username already exists in the database
+    const checkDuplicateSql = "SELECT COUNT(*) AS count FROM users WHERE username = ?";
+    db.query(checkDuplicateSql, [username], async (err, results) => {
+      if (err) {
+        console.error("Error checking duplicate user:", err);
+        return res.status(500).json({ error: "Database error." });
+      }
+
+      if (results[0].count > 0) {
+        return res.status(409).json({ message: "Username already exists." });
+      }
+
+      // Hash the password
+      const pwd = await bcrypt.hash(password, 10);
+
+      // Insert new user into the database
+      const insertUserSql = `
+            INSERT INTO users (username, pwd, email, nickname) 
+            VALUES (?, ?, ?, ?)
+          `;
+      db.query(insertUserSql, [username, pwd, email, nickname], (err, results) => {
+        if (err) {
+          console.error("Error inserting user:", err);
+          return res.status(500).json({ error: "Failed to store user data." });
+        }
+        res.status(201).json({ message: `New user ${nickname} created successfully!` });
+      });
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Error in signup process:", err);
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
