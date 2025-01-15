@@ -1,5 +1,4 @@
 const express = require("express");
-
 const path = require("path");
 const app = express();
 const verifyJWT = require("./middleware/verifyJWT");
@@ -7,6 +6,13 @@ const cookieParser = require("cookie-parser");
 
 app.use(express.json());
 app.use(logger); //LOGGER used
+
+
+app.use((req, res, next) => {
+  console.log(`Request received: ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(
   express.static(path.join(__dirname, "../../Portfolio/react-app-js/dist"))
 );
@@ -18,7 +24,7 @@ app.use("/auth", require("./routes/api/auth"));          //log in
 app.use("/refresh", require("./routes/api/refresh"));    //refresh token
 app.use("/logout", require("./routes/api/logout"));      //log out
 app.use("/fetch", require("./routes/api/fetch"));        //fetch user data when mount.
-
+app.use("/save", require("./routes/api/save"));          //save user data
 
 
 //handle react pages

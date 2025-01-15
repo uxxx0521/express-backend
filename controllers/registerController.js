@@ -37,7 +37,18 @@ const handleNewUser = async (req, res) => {
           console.error("Error inserting user:", err);
           return res.status(500).json({ error: "Failed to store user data." });
         }
-        res.status(201).json({ message: `New user ${nickname} created successfully!` });
+        const insertTrackerDataSql = `
+        INSERT INTO trackerData (currentBalance, totalIncome, totalExpenses, username) 
+        VALUES (0, 0, 0, ?)
+      `;
+        db.query(insertTrackerDataSql, [username], (err, trackerResults) => {
+          if (err) {
+            console.error("Error inserting tracker data:", err);
+            return res.status(500).json({ error: "Failed to initialize tracker data." });
+          }
+
+          res.status(201).json({ message: `New user ${nickname} created successfully!` });
+        });
       });
     });
   } catch (err) {
