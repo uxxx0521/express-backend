@@ -1,42 +1,47 @@
-const usersDB = {
-  users: require("../model/users.json"),
-  setUsers: function (data) {
-    this.users = data;
-  },
-};
-const fsPromises = require("fs").promises;
-const path = require("path");
+const db = require("../db"); // Database connection
 
 const handleLogout = async (req, res) => {
-  //On client, also delete the accessToken.
-  const cookies = req.cookies;
-  if (!cookies?.jwt) {
-    return res.sendStatus(204); //No content
-  }
-  console.log(cookies.jwt);
-  const refreshToken = cookies.jwt;
+  try {
+    // Get the refresh token from cookies
+    const cookies = req.cookies;
+    if (!cookies?.jwt) {
+      return res.sendStatus(204); // No content, no action needed
+    }
+    const refreshToken = cookies.jwt;
 
-  //If refreshToken in DB?
-  const foundUser = usersDB.users.find(
-    (person) => person.refreshToken === refreshToken
-  );
-  if (!foundUser) {
-    res.clearCookie("jwt", { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
-    return res.sendStatus(204);
+    // Check if the refresh token exists in the database
+    const sqlQuery = "SELECT username FROM users WHERE refreshToken = ?";
+    db.query(sqlQuery, [refreshToken], (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+
+      if (results.length === 0) {
+        // Token not found in DB
+        res.clearCookie("jwt", { httpOnly: true, secure: true });
+        return res.sendStatus(204); // Successfully logged out
+      }
+
+      const username = results[0].username;
+
+      // Remove the refresh token from the database
+      const updateQuery = "UPDATE users SET refreshToken = NULL WHERE username = ?";
+      db.query(updateQuery, [username], (err) => {
+        if (err) {
+          console.error("Error removing refresh token:", err);
+          return res.status(500).json({ error: "Failed to clear refresh token" });
+        }
+
+        // Clear the cookie on the client
+        res.clearCookie("jwt", { httpOnly: true, secure: true }); // Adjust `secure: true` for production
+        res.sendStatus(204); // Successfully logged out
+      });
+    });
+  } catch (err) {
+    console.error("Error in logout process:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
-  // Delete refreshToken in DB
-  const otherUsers = usersDB.users.filter(
-    (person) => person.refreshToken !== foundUser.refreshToken
-  );
-  const currentUser = { ...foundUser, refreshToken: "" };
-  usersDB.setUsers([...otherUsers, currentUser]);
-  await fsPromises.writeFile(
-    path.join(__dirname, "..", "model", "users.json"),
-    JSON.stringify(usersDB.users)
-  );
-  res.clearCookie("jwt", { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); //sercure: ture - only serves on https.
-  res.sendStatus(204);
 };
-module.exports = {
-  handleLogout,
-};
+
+module.exports = { handleLogout };
